@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<library>
+<index file="hsb_axis_avst_shim/hsb_axis_avst_shim_hw.tcl" />
+<index file="hsb_avst_axis_shim/hsb_avst_axis_shim_hw.tcl" />
+<index file="hsb_mipi_holo_shim/hsb_mipi_holo_shim_hw.tcl" />
+</library>

@@ -1,0 +1,51 @@
+<!--
+###################################################################################
+# Copyright (C) 2025 Altera Corporation
+#
+# This software and the related documents are Altera copyrighted materials, and
+# your use of them is governed by the express license under which they were
+# provided to you ("License"). Unless the License provides otherwise, you may
+# not use, modify, copy, publish, distribute, disclose or transmit this software
+# or the related documents without Altera's prior written permission.
+#
+# This software and the related documents are provided as is, with no express
+# or implied warranties, other than those that are expressly stated in the License.
+###################################################################################
+-->
+<PROJECT name="top">
+  <DEVKIT>AGX_5E_Modular_Devkit</DEVKIT>
+  <FAMILY>Agilex 5</FAMILY>
+  <DEVICE>A5ED065BB32AE6SR0</DEVICE>
+  <VERSION>25.1</VERSION>
+  <SUBSYSTEM type="clock" name="clock_subsystem">
+    <DISABLE_DEFAULT_BOARD_CLKRST_EXPORT_TAG>1</DISABLE_DEFAULT_BOARD_CLKRST_EXPORT_TAG>
+    <NUM_GEN_CLOCKS>2</NUM_GEN_CLOCKS>
+    <GEN_CLK0_NAME>clk_0</GEN_CLK0_NAME>
+    <GEN_CLK0_FREQ>312.5</GEN_CLK0_FREQ>
+    <GEN_CLK1_NAME>clk_1</GEN_CLK1_NAME>
+    <GEN_CLK1_FREQ>156.25</GEN_CLK1_FREQ>
+	<EXT_REF_CLK_FREQ_MHZ>322.265625</EXT_REF_CLK_FREQ_MHZ>
+	<NUM_RESETS>2</NUM_RESETS>
+	<IOPLL_EN_PERMIT_CAL>1</IOPLL_EN_PERMIT_CAL>
+  </SUBSYSTEM>
+  <SUBSYSTEM type="user" name="reset_sync_subsystem" script="./../subsystems/reset_sync_subsystem/reset_sync_create.tcl">
+  <CLK_FREQ_MHZ>100</CLK_FREQ_MHZ>
+  </SUBSYSTEM>
+  <SUBSYSTEM type="board" name="board_subsystem">
+  </SUBSYSTEM>
+  <SUBSYSTEM type="user" name="eth_10g_subsystem" script="./../subsystems/eth_10g_subsystem/eth_10g_create.tcl">
+  <CSR_CLK_FREQ_MHZ>100</CSR_CLK_FREQ_MHZ>
+  <GEN_CLK0_NAME>clk_0</GEN_CLK0_NAME>
+  <GEN_CLK0_FREQ_MHZ>312.5</GEN_CLK0_FREQ_MHZ>
+  <GEN_CLK1_NAME>clk_1</GEN_CLK1_NAME>
+  <GEN_CLK1_FREQ_MHZ>156.25</GEN_CLK1_FREQ_MHZ>
+  </SUBSYSTEM>
+  <SUBSYSTEM type="user" name="hsb_subsystem" script="./../subsystems/hsb_subsystem/hsb_create.tcl">
+  <APB_CLK_FREQ>100</APB_CLK_FREQ>
+  <HOST_INTF_CLK_FREQ>156.25</HOST_INTF_CLK_FREQ>
+  </SUBSYSTEM>
+   <SUBSYSTEM type="user" name="mipi_subsystem" script="./../subsystems/mipi_subsystem/mipi_create.tcl">
+  <CPU_CLK_FREQ>100</CPU_CLK_FREQ>
+  <VID_FREQ>156.25</VID_FREQ>
+  </SUBSYSTEM>
+</PROJECT>

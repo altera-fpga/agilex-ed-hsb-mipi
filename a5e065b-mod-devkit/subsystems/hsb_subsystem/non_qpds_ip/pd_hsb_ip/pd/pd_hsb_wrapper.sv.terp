@@ -1,0 +1,384 @@
+//##################################################################################
+// Copyright (C) 2025 Altera Corporation
+//
+// This software and the related documents are Altera copyrighted materials, and
+// your use of them is governed by the express license under which they were
+// provided to you ("License"). Unless the License provides otherwise, you may
+// not use, modify, copy, publish, distribute, disclose or transmit this software
+// or the related documents without Altera's prior written permission.
+//
+// This software and the related documents are provided as is, with no express
+// or implied warranties, other than those that are expressly stated in the License.
+//##################################################################################
+
+
+`include "rtl/HOLOLINK_def.svh"
+
+module ${output_name} (
+  input                        i_sys_rst,
+//------------------------------------------------------------------------------
+// User Reg Interface
+//------------------------------------------------------------------------------
+  // Control Plane
+  input                        i_apb_clk,
+  output                       o_apb_rst,
+@@ for {set inst 0} {$inst < $apb_inst} {incr inst} {
+  // APB Register Interface $inst
+  output                       o_apb_${inst}_psel,
+  output                       o_apb_${inst}_penable,
+  output [31               :0] o_apb_${inst}_paddr,
+  output [31               :0] o_apb_${inst}_pwdata,
+  output                       o_apb_${inst}_pwrite,
+  input                        i_apb_${inst}_pready,
+  input  [31               :0] i_apb_${inst}_prdata,
+  input                        i_apb_${inst}_pserr,
+@@ }
+//------------------------------------------------------------------------------
+// User Auto Initialization Complete
+//------------------------------------------------------------------------------
+  output                       o_init_done,
+//------------------------------------------------------------------------------
+// Sensor IF
+//------------------------------------------------------------------------------
+  // Sensor Interface Clock and Reset
+  input                        i_sif_clk,
+  output                       o_sif_rst,
+@@ for {set inst 0} {$inst < $sif_inst} {incr inst} {
+  // Sensor Rx Streaming Interface $inst
+  input                        i_rx_sif_${inst}_axis_tvalid,
+  input                        i_rx_sif_${inst}_axis_tlast,
+  input  [`DATAPATH_WIDTH-1:0] i_rx_sif_${inst}_axis_tdata,
+  input  [`DATAKEEP_WIDTH-1:0] i_rx_sif_${inst}_axis_tkeep,
+  input  [`DATAUSER_WIDTH-1:0] i_rx_sif_${inst}_axis_tuser,
+  output                       o_rx_sif_${inst}_axis_tready,
+  // Sensor Tx Streaming Interface $inst
+  output                       o_tx_sif_${inst}_axis_tvalid,
+  output                       o_tx_sif_${inst}_axis_tlast,
+  output [`DATAPATH_WIDTH-1:0] o_tx_sif_${inst}_axis_tdata,
+  output [`DATAKEEP_WIDTH-1:0] o_tx_sif_${inst}_axis_tkeep,
+  output [`DATAUSER_WIDTH-1:0] o_tx_sif_${inst}_axis_tuser,
+  input                        i_tx_sif_${inst}_axis_tready,
+  // Sensor Event
+  input  i_sif_event_${inst},
+  output o_sw_sen_rst_${inst},
+@@ }
+//------------------------------------------------------------------------------
+// Host IF
+//------------------------------------------------------------------------------
+  // Host Interface Clock and Reset
+  input                        i_hif_clk,
+  output                       o_hif_rst,
+@@ for {set inst 0} {$inst < $hif_inst} {incr inst} {
+  // Host Rx Interface $inst
+  input                        i_rx_hif_${inst}_axis_tvalid,
+  input                        i_rx_hif_${inst}_axis_tlast,
+  input  [`HOST_WIDTH-1    :0] i_rx_hif_${inst}_axis_tdata,
+  input  [`HOSTKEEP_WIDTH-1:0] i_rx_hif_${inst}_axis_tkeep,
+  input  [`HOSTUSER_WIDTH-1:0] i_rx_hif_${inst}_axis_tuser,
+  output                       o_rx_hif_${inst}_axis_tready,
+  // Host Tx Interface $inst
+  output                       o_tx_hif_${inst}_axis_tvalid,
+  output                       o_tx_hif_${inst}_axis_tlast,
+  output [`HOST_WIDTH-1    :0] o_tx_hif_${inst}_axis_tdata,
+  output [`HOSTKEEP_WIDTH-1:0] o_tx_hif_${inst}_axis_tkeep,
+  output [`HOSTUSER_WIDTH-1:0] o_tx_hif_${inst}_axis_tuser,
+  input                        i_tx_hif_${inst}_axis_tready,
+@@ }
+//------------------------------------------------------------------------------
+// Peripheral IF
+//------------------------------------------------------------------------------
+@@ for {set inst 0} {$inst < $spi_inst} {incr inst} {
+  // SPI Interface, QSPI compatable
+  output o_spi_${inst}_csn,
+  output o_spi_${inst}_sck,
+  input  [3                :0] i_spi_${inst}_sdio,
+  output [3                :0] o_spi_${inst}_sdio,
+  output o_spi_${inst}_oen,
+@@}
+@@ for {set inst 0} {$inst < $i2c_inst} {incr inst} {
+  // I2C Interface
+  input  i_i2c_${inst}_scl,
+  input  i_i2c_${inst}_sda,
+  output o_i2c_${inst}_scl_en,
+  output o_i2c_${inst}_sda_en,
+@@}
+  // GPIO
+  output [${gpio_inst}-1:0] o_gpio,
+  input  [${gpio_inst}-1:0] i_gpio,
+//------------------------------------------------------------------------------
+// JESD
+//------------------------------------------------------------------------------
+`ifdef JESD_SIF_ENABLE
+  //FMC SERDES
+  input  [7                :0] i_jesd_rxdp,
+  input  [7                :0] i_jesd_rxdn,
+  output [7                :0] o_jesd_txdp,
+  output [7                :0] o_jesd_txdn,
+  input                        i_jesd_tx_sysref,
+  input                        i_jesd_rx_sysref,
+  input                        i_jesd_xcvr_refclk,
+  input                        i_jesd_pll_refclk,
+`endif
+//------------------------------------------------------------------------------
+// sensor reset
+//------------------------------------------------------------------------------
+  output                       o_sw_sys_rst,
+//------------------------------------------------------------------------------
+// PPS
+//------------------------------------------------------------------------------
+  input                        i_ptp_clk,
+  output                       o_ptp_rst,
+  output [47               :0] o_ptp_sec,
+  output [31               :0] o_ptp_nanosec,
+  output                       o_ptp_pps
+);
+
+//------------------------------------------------------------------------------
+// User Reg Interface
+//------------------------------------------------------------------------------
+  wire   [`REG_INST-1      :0] o_apb_psel;
+  wire                         o_apb_penable;
+  wire   [31               :0] o_apb_paddr;
+  wire   [31               :0] o_apb_pwdata;
+  wire                         o_apb_pwrite;
+  wire   [`REG_INST-1      :0] i_apb_pready;
+  wire   [31               :0] i_apb_prdata [`REG_INST];
+  wire   [`REG_INST-1      :0] i_apb_pserr;
+//------------------------------------------------------------------------------
+// Sensor IF
+//------------------------------------------------------------------------------
+  // Sensor Rx Streaming Interface
+  wire  [`SENSOR_IF_INST-1:0] i_sif_axis_tvalid;
+  wire  [`SENSOR_IF_INST-1:0] i_sif_axis_tlast;
+  wire  [`DATAPATH_WIDTH-1:0] i_sif_axis_tdata [`SENSOR_IF_INST];
+  wire  [`DATAKEEP_WIDTH-1:0] i_sif_axis_tkeep [`SENSOR_IF_INST];
+  wire  [`DATAUSER_WIDTH-1:0] i_sif_axis_tuser [`SENSOR_IF_INST];
+  wire  [`SENSOR_IF_INST-1:0] o_sif_axis_tready;
+  // Sensor Tx Streaming Interface
+  wire  [`SENSOR_IF_INST-1:0] o_sif_axis_tvalid;
+  wire  [`SENSOR_IF_INST-1:0] o_sif_axis_tlast;
+  wire  [`DATAPATH_WIDTH-1:0] o_sif_axis_tdata [`SENSOR_IF_INST];
+  wire  [`DATAKEEP_WIDTH-1:0] o_sif_axis_tkeep [`SENSOR_IF_INST];
+  wire  [`DATAUSER_WIDTH-1:0] o_sif_axis_tuser [`SENSOR_IF_INST];
+  wire  [`SENSOR_IF_INST-1:0] i_sif_axis_tready;
+  // Sensor Event
+  wire  [`SENSOR_IF_INST-1:0] i_sif_event;
+//------------------------------------------------------------------------------
+// Host IF
+//------------------------------------------------------------------------------
+  // Host Rx Interface
+  wire  [`HOST_IF_INST-1  :0] i_hif_axis_tvalid;
+  wire  [`HOST_IF_INST-1  :0] i_hif_axis_tlast;
+  wire  [`HOST_WIDTH-1    :0] i_hif_axis_tdata [`HOST_IF_INST];
+  wire  [`HOSTKEEP_WIDTH-1:0] i_hif_axis_tkeep [`HOST_IF_INST];
+  wire  [`HOSTUSER_WIDTH-1:0] i_hif_axis_tuser [`HOST_IF_INST];
+  wire  [`HOST_IF_INST-1  :0] o_hif_axis_tready;
+  // Host Tx Interface
+  wire  [`HOST_IF_INST-1  :0] o_hif_axis_tvalid;
+  wire  [`HOST_IF_INST-1  :0] o_hif_axis_tlast;
+  wire  [`HOST_WIDTH-1    :0] o_hif_axis_tdata [`HOST_IF_INST];
+  wire  [`HOSTKEEP_WIDTH-1:0] o_hif_axis_tkeep [`HOST_IF_INST];
+  wire  [`HOSTUSER_WIDTH-1:0] o_hif_axis_tuser [`HOST_IF_INST];
+  wire  [`HOST_IF_INST-1  :0] i_hif_axis_tready;
+//------------------------------------------------------------------------------
+// Peripheral IF
+//------------------------------------------------------------------------------
+  // SPI Interface; QSPI compatable
+  wire  [`SPI_INST-1      :0] o_spi_csn;
+  wire  [`SPI_INST-1      :0] o_spi_sck;
+  wire  [3                :0] i_spi_sdio [`SPI_INST];
+  wire  [3                :0] o_spi_sdio [`SPI_INST];
+  wire  [`SPI_INST-1      :0] o_spi_oen;
+  // I2C Interface
+  wire  [`I2C_INST-1      :0] i_i2c_scl;
+  wire  [`I2C_INST-1      :0] i_i2c_sda;
+  wire  [`I2C_INST-1      :0] o_i2c_scl_en;
+  wire  [`I2C_INST-1      :0] o_i2c_sda_en;
+//------------------------------------------------------------------------------
+// JESD
+//------------------------------------------------------------------------------
+`ifdef JESD_SIF_ENABLE
+  //FMC SERDES
+  wire  [7                :0] i_jesd_rxdp;
+  wire  [7                :0] i_jesd_rxdn;
+  wire  [7                :0] o_jesd_txdp;
+  wire  [7                :0] o_jesd_txdn;
+  wire                        i_jesd_tx_sysref;
+  wire                        i_jesd_rx_sysref;
+  wire                        i_jesd_xcvr_refclk;
+  wire                        i_jesd_pll_refclk;
+`endif
+//------------------------------------------------------------------------------
+// sensor reset
+//------------------------------------------------------------------------------
+  wire  [`SENSOR_IF_INST-1:0] o_sw_sen_rst;
+
+@@ for {set inst 0} {$inst < $sif_inst} {incr inst} {
+  assign i_sif_axis_tvalid[$inst]     = i_rx_sif_${inst}_axis_tvalid;
+  assign i_sif_axis_tlast[$inst]      = i_rx_sif_${inst}_axis_tlast;
+  assign i_sif_axis_tdata[$inst]      = i_rx_sif_${inst}_axis_tdata;
+  assign i_sif_axis_tkeep[$inst]      = i_rx_sif_${inst}_axis_tkeep;
+  assign i_sif_axis_tuser[$inst]      = i_rx_sif_${inst}_axis_tuser;
+  assign o_rx_sif_${inst}_axis_tready = o_sif_axis_tready[$inst];
+  assign o_tx_sif_${inst}_axis_tvalid = o_sif_axis_tvalid[$inst];
+  assign o_tx_sif_${inst}_axis_tlast  = o_sif_axis_tlast[$inst];
+  assign o_tx_sif_${inst}_axis_tdata  = o_sif_axis_tdata[$inst];
+  assign o_tx_sif_${inst}_axis_tkeep  = o_sif_axis_tkeep[$inst];
+  assign o_tx_sif_${inst}_axis_tuser  = o_sif_axis_tuser[$inst];
+  assign i_sif_axis_tready[$inst]     = i_tx_sif_${inst}_axis_tready;
+  // Sensor Event
+  assign i_sif_event[$inst]           = i_sif_event_${inst};
+  assign o_sw_sen_rst_${inst}         = o_sw_sen_rst[$inst];
+@@ }
+
+@@ for {set inst 0} {$inst < $hif_inst} {incr inst} {
+  assign i_hif_axis_tvalid[$inst]     = i_rx_hif_${inst}_axis_tvalid;
+  assign i_hif_axis_tlast[$inst]      = i_rx_hif_${inst}_axis_tlast;
+  assign i_hif_axis_tdata[$inst]      = i_rx_hif_${inst}_axis_tdata;
+  assign i_hif_axis_tkeep[$inst]      = i_rx_hif_${inst}_axis_tkeep;
+  assign i_hif_axis_tuser[$inst]      = i_rx_hif_${inst}_axis_tuser;
+  assign o_rx_hif_${inst}_axis_tready = o_hif_axis_tready[$inst];
+  assign o_tx_hif_${inst}_axis_tvalid = o_hif_axis_tvalid[$inst];
+  assign o_tx_hif_${inst}_axis_tlast  = o_hif_axis_tlast[$inst];
+  assign o_tx_hif_${inst}_axis_tdata  = o_hif_axis_tdata[$inst];
+  assign o_tx_hif_${inst}_axis_tkeep  = o_hif_axis_tkeep[$inst];
+  assign o_tx_hif_${inst}_axis_tuser  = o_hif_axis_tuser[$inst];
+  assign i_hif_axis_tready[$inst]     = i_tx_hif_${inst}_axis_tready;
+@@ }
+
+@@ for {set inst 0} {$inst < $apb_inst} {incr inst} {
+  assign o_apb_${inst}_psel     = o_apb_psel[$inst];
+  assign o_apb_${inst}_penable  = o_apb_penable;
+  assign o_apb_${inst}_paddr    = o_apb_paddr[$inst];
+  assign o_apb_${inst}_pwdata   = o_apb_pwdata[$inst];
+  assign o_apb_${inst}_pwrite   = o_apb_pwrite;
+  assign i_apb_pready[$inst]    = i_apb_${inst}_pready;
+  assign i_apb_prdata[$inst]    = i_apb_${inst}_prdata;
+  assign i_apb_pserr[$inst]     = i_apb_${inst}_pserr;
+@@ }
+
+@@ for {set inst 0} {$inst < $spi_inst} {incr inst} {
+  assign o_spi_${inst}_csn      = o_spi_csn[$inst];
+  assign o_spi_${inst}_sck      = o_spi_sck[$inst];
+  assign o_spi_${inst}_oen      = o_spi_oen[$inst];
+  assign o_spi_${inst}_sdio     = o_spi_sdio[$inst];
+  assign i_spi_sdio[$inst]      = i_spi_${inst}_sdio;
+@@ }
+
+@@ for {set inst 0} {$inst < $i2c_inst} {incr inst} {
+  assign i_i2c_scl[$inst]       = i_i2c_${inst}_scl;
+  assign i_i2c_sda[$inst]       = i_i2c_${inst}_sda;
+  assign o_i2c_${inst}_scl_en   = o_i2c_scl_en[$inst];
+  assign o_i2c_${inst}_sda_en   = o_i2c_sda_en[$inst];
+@@ }
+
+  HOLOLINK_top i_hololink_top (
+    .i_sys_rst                  (i_sys_rst),
+  //------------------------------------------------------------------------------
+  // User Reg Interface
+  //------------------------------------------------------------------------------
+    // Control Plane
+    .i_apb_clk                  (i_apb_clk),
+    .o_apb_rst                  (o_apb_rst),
+    // APB Register Interface
+    .o_apb_psel                 (o_apb_psel),
+    .o_apb_penable              (o_apb_penable),
+    .o_apb_paddr                (o_apb_paddr),
+    .o_apb_pwdata               (o_apb_pwdata),
+    .o_apb_pwrite               (o_apb_pwrite),
+    .i_apb_pready               (i_apb_pready),
+    .i_apb_prdata               (i_apb_prdata),
+    .i_apb_pserr                (i_apb_pserr),
+  //------------------------------------------------------------------------------
+  // User Auto Initialization Complete
+  //------------------------------------------------------------------------------
+    .o_init_done                (o_init_done),
+  //------------------------------------------------------------------------------
+  // Sensor IF
+  //------------------------------------------------------------------------------
+    // Sensor Interface Clock and Reset
+    .i_sif_clk                  (i_sif_clk),
+    .o_sif_rst                  (o_sif_rst),
+    // Sensor Rx Streaming Interface
+    .i_sif_axis_tvalid          (i_sif_axis_tvalid),
+    .i_sif_axis_tlast           (i_sif_axis_tlast),
+    .i_sif_axis_tdata           (i_sif_axis_tdata),
+    .i_sif_axis_tkeep           (i_sif_axis_tkeep),
+    .i_sif_axis_tuser           (i_sif_axis_tuser),
+    .o_sif_axis_tready          (o_sif_axis_tready),
+    // Sensor Tx Streaming Interface
+    .o_sif_axis_tvalid          (o_sif_axis_tvalid),
+    .o_sif_axis_tlast           (o_sif_axis_tlast),
+    .o_sif_axis_tdata           (o_sif_axis_tdata),
+    .o_sif_axis_tkeep           (o_sif_axis_tkeep),
+    .o_sif_axis_tuser           (o_sif_axis_tuser),
+    .i_sif_axis_tready          (i_sif_axis_tready),
+    // Sensor Event
+    .i_sif_event                (i_sif_event),
+  //------------------------------------------------------------------------------
+  // Host IF
+  //------------------------------------------------------------------------------
+    // Host Interface Clock and Reset
+    .i_hif_clk                  (i_hif_clk),
+    .o_hif_rst                  (o_hif_rst),
+    // Host Rx Interface
+    .i_hif_axis_tvalid          (i_hif_axis_tvalid),
+    .i_hif_axis_tlast           (i_hif_axis_tlast),
+    .i_hif_axis_tdata           (i_hif_axis_tdata),
+    .i_hif_axis_tkeep           (i_hif_axis_tkeep),
+    .i_hif_axis_tuser           (i_hif_axis_tuser),
+    .o_hif_axis_tready          (o_hif_axis_tready),
+    // Host Tx Interface
+    .o_hif_axis_tvalid          (o_hif_axis_tvalid),
+    .o_hif_axis_tlast           (o_hif_axis_tlast),
+    .o_hif_axis_tdata           (o_hif_axis_tdata),
+    .o_hif_axis_tkeep           (o_hif_axis_tkeep),
+    .o_hif_axis_tuser           (o_hif_axis_tuser),
+    .i_hif_axis_tready          (i_hif_axis_tready),
+  //------------------------------------------------------------------------------
+  // Peripheral IF
+  //------------------------------------------------------------------------------
+    // SPI Interface, QSPI compatable
+    .o_spi_csn                  (o_spi_csn),
+    .o_spi_sck                  (o_spi_sck),
+    .i_spi_sdio                 (i_spi_sdio),
+    .o_spi_sdio                 (o_spi_sdio),
+    .o_spi_oen                  (o_spi_oen),
+    // I2C Interface
+    .i_i2c_scl                  (i_i2c_scl),
+    .i_i2c_sda                  (i_i2c_sda),
+    .o_i2c_scl_en               (o_i2c_scl_en),
+    .o_i2c_sda_en               (o_i2c_sda_en),
+    // GPIO
+    .o_gpio                     (o_gpio),
+    .i_gpio                     (i_gpio),
+  //------------------------------------------------------------------------------
+  // JESD
+  //------------------------------------------------------------------------------
+  `ifdef JESD_SIF_ENABLE
+    //FMC SERDES
+    .i_jesd_rxdp                (i_jesd_rxdp),
+    .i_jesd_rxdn                (i_jesd_rxdn),
+    .o_jesd_txdp                (o_jesd_txdp),
+    .o_jesd_txdn                (o_jesd_txdn),
+    .i_jesd_tx_sysref           (i_jesd_tx_sysref),
+    .i_jesd_rx_sysref           (i_jesd_rx_sysref),
+    .i_jesd_xcvr_refclk         (i_jesd_xcvr_refclk),
+    .i_jesd_pll_refclk          (i_jesd_pll_refclk),
+  `endif
+  //------------------------------------------------------------------------------
+  // sensor reset
+  //------------------------------------------------------------------------------
+    .o_sw_sys_rst               (o_sw_sys_rst),
+    .o_sw_sen_rst               (o_sw_sen_rst),
+  //------------------------------------------------------------------------------
+  // PPS
+  //------------------------------------------------------------------------------
+    .i_ptp_clk                  (i_ptp_clk),
+    .o_ptp_rst                  (o_ptp_rst),
+    .o_ptp_sec                  (o_ptp_sec),
+    .o_ptp_nanosec              (o_ptp_nanosec),
+    .o_pps                      (o_ptp_pps)
+  );
+
+endmodule

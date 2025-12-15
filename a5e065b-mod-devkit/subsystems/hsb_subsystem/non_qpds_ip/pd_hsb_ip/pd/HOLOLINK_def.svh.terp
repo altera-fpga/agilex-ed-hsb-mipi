@@ -1,0 +1,152 @@
+`ifndef HOLOLINK_def
+`define HOLOLINK_def
+
+package HOLOLINK_pkg;
+
+//-----------------------------------------------------
+// Define FPGA Vendor for Macro Instantiation
+//-----------------------------------------------------
+
+// XILINX / ALTERA / LATTICE / MICROCHIP
+  `define ALTERA
+
+//-----------------------------------------------------
+// Holoscan IP Host Clock Frequency
+//
+// Used for internal timer calculation
+//-----------------------------------------------------
+
+  `define HIF_CLK_FREQ  $hif_clk_freq
+  `define PTP_CLK_FREQ  $ptp_clk_freq
+
+//-----------------------------------------------------
+// Holoscan IP APB Clock Frequency
+//
+// Used for I2C clock divider setting
+//-----------------------------------------------------
+
+   `define APB_CLK_FREQ  $apb_clk_freq
+
+//-----------------------------------------------------
+// MAC Address
+//
+// If MAC address is not defined in an external memory,
+// i.e EEPROM, then the soft MAC address can be used
+//-----------------------------------------------------
+
+//-----------------------------------------------------
+// Board Info Enumeration
+//
+// Use ENUM_EEPROM if board info is stored in an external
+// EEPROM. Otherwise,
+//-----------------------------------------------------
+
+//  `define ENUM_EEPROM
+  `define BOARD_ID  8'h04
+  // 7b1fa8c7-31aa-44b6-abcc-eac134461fdc
+  `define UUID 128'h7b1f_a8c7_31aa_44b6_abcc_eac1_3446_1fdc
+
+`ifndef ENUM_EEPROM
+  `define MAC_ADDR  48'hCAFEC0FFEE10
+  `define BOARD_VER 160'h0123456789012345678901234567890123456789
+  `define BOARD_SN  56'h00000000000001
+  `define FPGA_CRC  16'h0000
+  `define MISC      32'h00000002
+`endif
+//-----------------------------------------------------
+// Sensor IF
+//-----------------------------------------------------
+
+`ifndef DATAPATH_WIDTH
+  `define DATAPATH_WIDTH  64                 // Sensor interface data width
+`endif
+
+`define DATAKEEP_WIDTH    `DATAPATH_WIDTH/8  // Sensor interface data keep width
+`define DATAUSER_WIDTH    1                  // Sensor interface data user width
+
+`ifndef SENSOR_IF_INST
+  `define SENSOR_IF_INST  $sif_inst          // Sensor interface instantiation number
+`endif
+
+//-----------------------------------------------------
+// Host IF
+//-----------------------------------------------------
+
+`ifndef HOST_WIDTH
+  `define HOST_WIDTH      64                 // Host interface data width
+`endif
+
+`define HOSTKEEP_WIDTH    `HOST_WIDTH/8      // Host interface data keep width
+`define HOSTUSER_WIDTH    1                  // Host interface data user width
+
+`ifndef HOST_IF_INST
+  `define HOST_IF_INST    $hif_inst          // Host interface instantiation number
+`endif
+
+`define HOST_MTU       1500
+
+//------------------------------------------------------------------------------
+// Peripheral Control
+//------------------------------------------------------------------------------
+
+`ifndef SPI_INST
+  `define SPI_INST  $spi_inst   // SPI interface instantiation number
+`endif
+`ifndef  I2C_INST
+  `define I2C_INST  $i2c_inst   // I2C interface instantiation number
+`endif
+`define GPIO_INST $gpio_inst  // INOUT GPIO instantiation number
+
+localparam [`GPIO_INST-1:0] GPIO_RESET_VALUE ='0;
+
+//------------------------------------------------------------------------------
+// Register IF
+//
+// Creates <REG_INST> number of APB register interfaces for user logic access
+//------------------------------------------------------------------------------
+
+`define REG_INST $apb_inst
+
+//------------------------------------------------------------------------------
+// Packetizer
+//
+// Sets the Packetizer Parameters for Each Sensor IF
+//------------------------------------------------------------------------------
+
+localparam integer  SIF_SORT_RESOLUTION [$sif_inst-1:0] = '{default:8};
+localparam integer  SIF_VP_COUNT        [$sif_inst-1:0] = '{default:0};
+localparam integer  SIF_VP_SIZE         [$sif_inst-1:0] = '{default:32};
+localparam integer  SIF_NUM_CYCLES      [$sif_inst-1:0] = '{default:1};
+localparam integer  SIF_DYN_VP          [$sif_inst-1:0] = '{default:0};
+localparam integer  SIF_MIXED_VP_SIZE   [$sif_inst-1:0] = '{default:0};
+
+//Includes the internal data generators
+`define SENSOR_RX_DATA_GEN 1
+
+//------------------------------------------------------------------------------
+// System Initialization
+//
+// Initialization for the Host Interface registers so communication can be
+// established between the FPGA and the Host
+//------------------------------------------------------------------------------
+
+`define N_INIT_REG 7
+
+localparam logic [63:0] init_reg [`N_INIT_REG] = '{
+  // 32b Addr   | 32b Data
+
+  // Hololink Internal Reg Initialization // TODO To be removed (not required, can be done by sw)
+  {32'h0200_0020, 32'h0000_2000}, // inst_dec_0, ecb_udp_port
+  {32'h0200_021C, 32'h0000_2329}, // ctrl_evt_0, ctrl_evt_host_udp_port
+  {32'h0200_0220, 32'h0000_2329}, // ctrl_evt_0, ctrl_evt_fpga_udp_port
+  {32'h0200_0108, 32'h0000_0064}, // eth_pkt_0 , Eth pkt data plane priority
+  {32'h0200_0024, 32'h0000_3000}, // inst_dec_0, stx_udp_port
+
+  // Do not remove as needed to setup the I2C controller
+  {32'h0300_0210, 32'h004C_4B40}, // i2c timeout
+  {32'h0300_020c, 32'h0000_0019} // i2c clock
+
+};
+
+endpackage: HOLOLINK_pkg
+`endif
